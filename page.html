@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en-AU">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Community Assistant | Shellharbour City Council</title>
+<meta name="description" content="Ask questions about Shellharbour City Council services — bins, rates, planning, pets, and more.">
+<link rel="icon" href="https://cdn.shellharbour.nsw.gov.au/sites/default/files/favicon_6.ico">
+<link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700&family=Lato:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --primary: #0076CF;
+  --primary-dark: #005FA3;
+  --accent: #10127C;
+  --secondary: #D5E6F4;
+  --bg: #FAFAFA;
+  --white: #FFFFFF;
+  --text: #1a1a1a;
+  --text-light: #555;
+  --border: #ddd;
+  --success: #28a745;
+  --user-bubble: #0076CF;
+  --bot-bubble: #f0f4f8;
+  --shadow: 0 2px 12px rgba(0,0,0,0.08);
+  --radius: 12px;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+body { font-family:'Lato','Helvetica Neue',Arial,sans-serif; background:var(--bg); color:var(--text); line-height:1.5; }
+h1,h2,h3 { font-family:'Montserrat',sans-serif; }
+a { color:var(--primary); text-decoration:none; }
+a:hover { text-decoration:underline; }
+
+/* ── Header ── */
+.site-header { background:linear-gradient(135deg, var(--accent) 0%, var(--primary) 100%); color:var(--white); padding:0; }
+.header-inner { max-width:1200px; margin:0 auto; padding:12px 20px; display:flex; align-items:center; justify-content:space-between; }
+.header-logo { display:flex; align-items:center; gap:12px; }
+.header-logo img { height:44px; filter:brightness(0) invert(1); }
+.header-logo span { font-family:'Montserrat',sans-serif; font-size:18px; font-weight:700; }
+.header-nav { display:flex; gap:20px; }
+.header-nav a { color:rgba(255,255,255,0.9); font-size:14px; font-weight:700; }
+.header-nav a:hover { color:var(--white); text-decoration:none; }
+
+/* ── Hero ── */
+.hero { background:linear-gradient(135deg, var(--primary) 0%, var(--accent) 100%); color:var(--white); text-align:center; padding:40px 20px 30px; }
+.hero h1 { font-size:28px; margin-bottom:8px; }
+.hero p { font-size:16px; opacity:0.9; max-width:600px; margin:0 auto; }
+
+/* ── Quick Services ── */
+.services { max-width:1000px; margin:-20px auto 20px; padding:0 20px; position:relative; z-index:2; }
+.services-grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(140px, 1fr)); gap:10px; }
+.service-btn { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:14px 10px; text-align:center; cursor:pointer; transition:all 0.2s; font-size:13px; font-weight:700; color:var(--accent); box-shadow:var(--shadow); }
+.service-btn:hover { border-color:var(--primary); background:var(--secondary); transform:translateY(-2px); }
+.service-btn .icon { font-size:22px; display:block; margin-bottom:6px; }
+
+/* ── Chat Container ── */
+.chat-container { max-width:800px; margin:0 auto 30px; padding:0 20px; }
+.chat-panel { background:var(--white); border-radius:var(--radius); box-shadow:var(--shadow); overflow:hidden; border:1px solid var(--border); }
+.chat-header { background:var(--primary); color:var(--white); padding:14px 20px; display:flex; align-items:center; justify-content:space-between; }
+.chat-header h2 { font-size:16px; font-weight:700; }
+.chat-controls { display:flex; gap:8px; }
+.chat-controls button { background:rgba(255,255,255,0.2); border:none; color:var(--white); width:32px; height:32px; border-radius:50%; cursor:pointer; font-size:16px; display:flex; align-items:center; justify-content:center; }
+.chat-controls button:hover { background:rgba(255,255,255,0.3); }
+.chat-controls button.active { background:rgba(255,255,255,0.4); }
+
+/* ── Messages ── */
+.messages { height:420px; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:12px; scroll-behavior:smooth; }
+.message { max-width:85%; padding:12px 16px; border-radius:16px; font-size:15px; line-height:1.6; word-wrap:break-word; }
+.message.bot { background:var(--bot-bubble); color:var(--text); align-self:flex-start; border-bottom-left-radius:4px; }
+.message.user { background:var(--user-bubble); color:var(--white); align-self:flex-end; border-bottom-right-radius:4px; }
+.message a { color:var(--primary); font-weight:700; }
+.message.user a { color:#c5e4ff; }
+.message ul, .message ol { margin:8px 0 8px 20px; }
+.message li { margin:4px 0; }
+.message p { margin:6px 0; }
+.message p:first-child { margin-top:0; }
+.message p:last-child { margin-bottom:0; }
+.message strong { font-weight:700; }
+
+/* ── Typing indicator ── */
+.typing { align-self:flex-start; padding:12px 16px; background:var(--bot-bubble); border-radius:16px; border-bottom-left-radius:4px; display:none; }
+.typing span { display:inline-block; width:8px; height:8px; background:#999; border-radius:50%; margin:0 2px; animation:bounce 1.4s infinite ease-in-out; }
+.typing span:nth-child(1) { animation-delay:-0.32s; }
+.typing span:nth-child(2) { animation-delay:-0.16s; }
+@keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-6px)} }
+
+/* ── Feedback ── */
+.feedback { display:none; padding:4px 0; gap:6px; align-items:center; }
+.feedback button { background:none; border:1px solid var(--border); border-radius:6px; padding:4px 10px; cursor:pointer; font-size:13px; color:var(--text-light); transition:all 0.2s; }
+.feedback button:hover { background:var(--secondary); border-color:var(--primary); }
+.feedback button.selected { background:var(--secondary); border-color:var(--primary); color:var(--primary); }
+
+/* ── Suggestions ── */
+.suggestions { padding:0 20px 12px; display:flex; flex-wrap:wrap; gap:8px; }
+.suggestion { background:var(--secondary); color:var(--accent); border:1px solid transparent; border-radius:20px; padding:8px 16px; font-size:13px; cursor:pointer; transition:all 0.2s; white-space:nowrap; }
+.suggestion:hover { border-color:var(--primary); background:var(--white); }
+
+/* ── Input ── */
+.input-area { display:flex; padding:12px; gap:8px; border-top:1px solid var(--border); background:var(--white); }
+.input-area input { flex:1; border:1px solid var(--border); border-radius:24px; padding:12px 18px; font-size:15px; font-family:inherit; outline:none; transition:border-color 0.2s; }
+.input-area input:focus { border-color:var(--primary); }
+.input-area button { border:none; border-radius:50%; width:44px; height:44px; cursor:pointer; display:flex; align-items:center; justify-content:center; font-size:18px; transition:all 0.2s; }
+.btn-send { background:var(--primary); color:var(--white); }
+.btn-send:hover { background:var(--primary-dark); }
+.btn-send:disabled { background:#ccc; cursor:not-allowed; }
+.btn-mic { background:var(--bot-bubble); color:var(--text); }
+.btn-mic:hover { background:var(--secondary); }
+.btn-mic.recording { background:#e74c3c; color:var(--white); animation:pulse 1.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.7} }
+
+/* ── Footer ── */
+.site-footer { background:var(--accent); color:rgba(255,255,255,0.85); padding:30px 20px; margin-top:40px; }
+.footer-inner { max-width:1200px; margin:0 auto; display:grid; grid-template-columns:1fr 1fr; gap:30px; }
+.footer-ack { grid-column:1/-1; font-style:italic; font-size:13px; padding-bottom:16px; border-bottom:1px solid rgba(255,255,255,0.15); }
+.footer-col h3 { font-size:14px; margin-bottom:8px; color:var(--white); }
+.footer-col p, .footer-col a { font-size:13px; color:rgba(255,255,255,0.8); }
+.footer-col a:hover { color:var(--white); }
+.footer-social { display:flex; gap:12px; margin-top:8px; }
+.footer-social a { font-size:13px; }
+.footer-bottom { text-align:center; font-size:12px; margin-top:20px; padding-top:16px; border-top:1px solid rgba(255,255,255,0.15); opacity:0.7; }
+.footer-bottom a { color:rgba(255,255,255,0.8); }
+
+/* ── Mobile ── */
+@media (max-width:768px) {
+  .header-nav { display:none; }
+  .hero h1 { font-size:22px; }
+  .hero p { font-size:14px; }
+  .services-grid { grid-template-columns:repeat(3, 1fr); }
+  .service-btn { padding:10px 6px; font-size:12px; }
+  .service-btn .icon { font-size:18px; }
+  .messages { height:350px; }
+  .message { max-width:92%; font-size:14px; }
+  .footer-inner { grid-template-columns:1fr; }
+  .suggestions { overflow-x:auto; flex-wrap:nowrap; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<header class="site-header">
+  <div class="header-inner">
+    <a href="https://www.shellharbour.nsw.gov.au/" class="header-logo" target="_blank">
+      <img src="https://cdn.shellharbour.nsw.gov.au/sites/all/themes/shh/images/shellharbour-logo.svg" alt="Shellharbour City Council">
+      <span>CouncilGenius</span>
+    </a>
+    <nav class="header-nav">
+      <a href="https://www.shellharbour.nsw.gov.au/council" target="_blank">Council</a>
+      <a href="https://www.shellharbour.nsw.gov.au/living-here" target="_blank">Living Here</a>
+      <a href="https://www.shellharbour.nsw.gov.au/plan-and-build" target="_blank">Plan &amp; Build</a>
+      <a href="https://www.shellharbour.nsw.gov.au/things-to-do" target="_blank">Things to Do</a>
+      <a href="https://www.shellharbour.nsw.gov.au/environment" target="_blank">Environment</a>
+    </nav>
+  </div>
+</header>
+
+<!-- Hero -->
+<section class="hero">
+  <h1>Shellharbour City Council Community Assistant</h1>
+  <p>Ask me about council services — bins, rates, planning, pets, parks, and more. Available 24/7.</p>
+</section>
+
+<!-- Quick Services -->
+<section class="services">
+  <div class="services-grid" id="servicesGrid">
+    <button class="service-btn" data-query="When are my bins collected and what goes in each bin?"><span class="icon">&#x1F5D1;</span>Bin Days</button>
+    <button class="service-btn" data-query="How do I pay my council rates online and what payment methods are accepted?"><span class="icon">&#x1F4B3;</span>Pay Rates</button>
+    <button class="service-btn" data-query="How do I report a pothole, broken footpath, or maintenance issue to council?"><span class="icon">&#x1F6A7;</span>Report Issue</button>
+    <button class="service-btn" data-query="How do I lodge a development application and what are the fees?"><span class="icon">&#x1F3D7;</span>Planning &amp; DAs</button>
+    <button class="service-btn" data-query="How do I register my dog or cat and what are the registration fees?"><span class="icon">&#x1F43E;</span>Pet Rego</button>
+    <button class="service-btn" data-query="What are the Dunmore Recycling and Waste Depot hours, fees, and accepted materials?"><span class="icon">&#x267B;</span>Dunmore Depot</button>
+    <button class="service-btn" data-query="What are the Shellharbour library locations and opening hours?"><span class="icon">&#x1F4DA;</span>Libraries</button>
+    <button class="service-btn" data-query="What parks, playgrounds, and sports facilities are in Shellharbour?"><span class="icon">&#x1F333;</span>Parks</button>
+    <button class="service-btn" data-query="How do I contact Shellharbour City Council and what are the office hours?"><span class="icon">&#x1F4DE;</span>Contact</button>
+  </div>
+</section>
+
+<!-- Chat -->
+<section class="chat-container">
+  <div class="chat-panel">
+    <div class="chat-header">
+      <h2>Chat with us</h2>
+      <div class="chat-controls">
+        <button id="ttsToggle" title="Toggle text-to-speech">&#x1F50A;</button>
+        <button id="clearChat" title="Clear chat">&#x1F5D1;</button>
+      </div>
+    </div>
+    <div class="messages" id="messages">
+      <div class="message bot">
+        G'day! I'm the Shellharbour City Council Community Assistant. I can help with bins, rates, planning, pets, parks, and other council services. What can I help you with today?
+      </div>
+    </div>
+    <div class="typing" id="typing"><span></span><span></span><span></span></div>
+    <div class="suggestions" id="suggestions">
+      <button class="suggestion" data-query="When is my next bin collection day?">Bin collection day</button>
+      <button class="suggestion" data-query="What are the rates instalment dates and payment options?">Rates due dates</button>
+      <button class="suggestion" data-query="Do I need a development application for a garden shed?">Need a DA?</button>
+      <button class="suggestion" data-query="Where can I walk my dog off-lead in Shellharbour?">Off-lead dog areas</button>
+      <button class="suggestion" data-query="What events are on in Shellharbour?">What's on</button>
+    </div>
+    <div class="input-area">
+      <button class="btn-mic" id="micBtn" title="Voice input">&#x1F3A4;</button>
+      <input type="text" id="userInput" placeholder="Type your question..." autocomplete="off">
+      <button class="btn-send" id="sendBtn" title="Send">&#x27A4;</button>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer class="site-footer">
+  <div class="footer-inner">
+    <div class="footer-ack">
+      Shellharbour City Council acknowledges the Traditional Custodians of Dharawal Country and recognises their continued connection to the land. We pay our respects to Elders past, present and emerging.
+    </div>
+    <div class="footer-col">
+      <h3>Contact Council</h3>
+      <p><a href="tel:0242216111">02 4221 6111</a></p>
+      <p><a href="mailto:council@shellharbour.nsw.gov.au">council@shellharbour.nsw.gov.au</a></p>
+      <p>76 Cygnet Avenue, Shellharbour City Centre</p>
+      <p>Mon-Fri 8:30am - 4:30pm</p>
+    </div>
+    <div class="footer-col">
+      <h3>Follow Us</h3>
+      <div class="footer-social">
+        <a href="https://www.facebook.com/ShellharbourCC" target="_blank">Facebook</a>
+        <a href="https://www.instagram.com/shellharbourcitycouncil" target="_blank">Instagram</a>
+        <a href="https://www.linkedin.com/company/shellharbour-city-council" target="_blank">LinkedIn</a>
+      </div>
+      <h3 style="margin-top:16px">Waste Services (REMONDIS)</h3>
+      <p><a href="tel:1300121344">1300 121 344</a></p>
+      <p><a href="https://www.shellharbourwaste.com.au" target="_blank">shellharbourwaste.com.au</a></p>
+    </div>
+  </div>
+  <div class="footer-bottom">
+    <p>Powered by CouncilGenius &mdash; AI Community Assistant</p>
+    <p>This is an AI assistant. For urgent or complex matters, please <a href="tel:0242216111">call council directly</a>.</p>
+  </div>
+</footer>
+
+<script>
+// ── Configuration ──
+const API_URL = '/api/chat';
+const FEEDBACK_URL = '/feedback';
+const SESSION_ID = 'cg-' + Math.random().toString(36).slice(2, 10) + '-' + Date.now();
+
+// ── State ──
+let messages = [];
+let isLoading = false;
+let ttsEnabled = false;
+let recognition = null;
+
+// ── DOM ──
+const msgContainer = document.getElementById('messages');
+const userInput = document.getElementById('userInput');
+const sendBtn = document.getElementById('sendBtn');
+const micBtn = document.getElementById('micBtn');
+const ttsToggle = document.getElementById('ttsToggle');
+const clearBtn = document.getElementById('clearChat');
+const typingEl = document.getElementById('typing');
+const suggestionsEl = document.getElementById('suggestions');
+
+// ── Markdown rendering (lightweight) ──
+function renderMarkdown(text) {
+  let html = text
+    // Bold
+    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+    // Italic
+    .replace(/\*(.+?)\*/g, '<em>$1</em>')
+    // Links: [text](url)
+    .replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener">$1</a>')
+    .replace(/\[([^\]]+)\]\((tel:[^\s)]+)\)/g, '<a href="$2">$1</a>')
+    .replace(/\[([^\]]+)\]\((mailto:[^\s)]+)\)/g, '<a href="$2">$1</a>')
+    // Unordered lists
+    .replace(/^[\-\*] (.+)/gm, '<li>$1</li>')
+    // Numbered lists
+    .replace(/^\d+\. (.+)/gm, '<li>$1</li>')
+    // Paragraphs
+    .replace(/\n\n/g, '</p><p>')
+    .replace(/\n/g, '<br>');
+
+  // Wrap consecutive <li> in <ul>
+  html = html.replace(/(<li>.*?<\/li>)+/gs, match => '<ul>' + match + '</ul>');
+  return '<p>' + html + '</p>';
+}
+
+// ── Send message ──
+async function sendMessage(text) {
+  if (!text.trim() || isLoading) return;
+  isLoading = true;
+  sendBtn.disabled = true;
+  suggestionsEl.style.display = 'none';
+
+  // Add user message
+  messages.push({ role: 'user', content: text.trim() });
+  appendMessage('user', text.trim());
+  userInput.value = '';
+
+  // Show typing
+  typingEl.style.display = 'block';
+  scrollToBottom();
+
+  try {
+    const res = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ messages, session_id: SESSION_ID })
+    });
+    const data = await res.json();
+
+    typingEl.style.display = 'none';
+
+    if (data.error && !data.response) {
+      appendMessage('bot', data.error);
+    } else {
+      const reply = data.response || data.error || 'Sorry, something went wrong.';
+      messages.push({ role: 'assistant', content: reply });
+      const msgEl = appendMessage('bot', reply);
+      addFeedback(msgEl, reply);
+
+      if (ttsEnabled) speak(reply);
+    }
+  } catch (err) {
+    typingEl.style.display = 'none';
+    appendMessage('bot', 'Sorry, I\'m having trouble connecting. Please try again or call council on <a href="tel:0242216111">02 4221 6111</a>.');
+  }
+
+  isLoading = false;
+  sendBtn.disabled = false;
+  scrollToBottom();
+}
+
+function appendMessage(role, text) {
+  const div = document.createElement('div');
+  div.className = 'message ' + role;
+  div.innerHTML = role === 'bot' ? renderMarkdown(text) : escapeHtml(text);
+  msgContainer.appendChild(div);
+  scrollToBottom();
+  return div;
+}
+
+function addFeedback(msgEl, text) {
+  const fb = document.createElement('div');
+  fb.className = 'feedback';
+  fb.style.display = 'flex';
+  fb.innerHTML = `
+    <button class="fb-up" title="Helpful">&#x1F44D;</button>
+    <button class="fb-down" title="Not helpful">&#x1F44E;</button>
+  `;
+  fb.querySelector('.fb-up').onclick = () => submitFeedback('up', text, fb);
+  fb.querySelector('.fb-down').onclick = () => submitFeedback('down', text, fb);
+  msgEl.after(fb);
+}
+
+function submitFeedback(rating, text, el) {
+  el.querySelectorAll('button').forEach(b => b.classList.remove('selected'));
+  el.querySelector(rating === 'up' ? '.fb-up' : '.fb-down').classList.add('selected');
+  fetch(FEEDBACK_URL, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ rating, message_preview: text.slice(0, 80), session_id: SESSION_ID })
+  }).catch(() => {});
+}
+
+function escapeHtml(text) {
+  const d = document.createElement('div');
+  d.textContent = text;
+  return d.innerHTML;
+}
+
+function scrollToBottom() {
+  requestAnimationFrame(() => {
+    msgContainer.scrollTop = msgContainer.scrollHeight;
+  });
+}
+
+// ── Voice input (Web Speech API) ──
+function initVoice() {
+  if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+    micBtn.style.display = 'none';
+    return;
+  }
+  const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+  recognition = new SR();
+  recognition.lang = 'en-AU';
+  recognition.interimResults = false;
+  recognition.continuous = false;
+
+  recognition.onresult = (e) => {
+    const transcript = e.results[0][0].transcript;
+    userInput.value = transcript;
+    micBtn.classList.remove('recording');
+    sendMessage(transcript);
+  };
+  recognition.onerror = () => { micBtn.classList.remove('recording'); };
+  recognition.onend = () => { micBtn.classList.remove('recording'); };
+}
+
+micBtn.addEventListener('click', () => {
+  if (!recognition) return;
+  if (micBtn.classList.contains('recording')) {
+    recognition.stop();
+  } else {
+    micBtn.classList.add('recording');
+    recognition.start();
+  }
+});
+
+// ── Text-to-speech ──
+function speak(text) {
+  if (!('speechSynthesis' in window)) return;
+  window.speechSynthesis.cancel();
+  const clean = text.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[*#_]/g, '');
+  const utt = new SpeechSynthesisUtterance(clean);
+  utt.lang = 'en-AU';
+  utt.rate = 1.0;
+  window.speechSynthesis.speak(utt);
+}
+
+ttsToggle.addEventListener('click', () => {
+  ttsEnabled = !ttsEnabled;
+  ttsToggle.classList.toggle('active', ttsEnabled);
+  ttsToggle.title = ttsEnabled ? 'Text-to-speech ON' : 'Text-to-speech OFF';
+});
+
+// ── Clear chat ──
+clearBtn.addEventListener('click', () => {
+  messages = [];
+  msgContainer.innerHTML = '';
+  appendMessage('bot', "G'day! I'm the Shellharbour City Council Community Assistant. I can help with bins, rates, planning, pets, parks, and other council services. What can I help you with today?");
+  suggestionsEl.style.display = 'flex';
+});
+
+// ── Event listeners ──
+sendBtn.addEventListener('click', () => sendMessage(userInput.value));
+userInput.addEventListener('keydown', (e) => {
+  if (e.key === 'Enter' && !e.shiftKey) {
+    e.preventDefault();
+    sendMessage(userInput.value);
+  }
+});
+
+// Quick service buttons
+document.querySelectorAll('.service-btn').forEach(btn => {
+  btn.addEventListener('click', () => sendMessage(btn.getAttribute('data-query')));
+});
+
+// Suggestion chips
+document.querySelectorAll('.suggestion').forEach(chip => {
+  chip.addEventListener('click', () => sendMessage(chip.getAttribute('data-query')));
+});
+
+// Init
+initVoice();
+</script>
+</body>
+</html>
